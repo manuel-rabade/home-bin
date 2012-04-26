@@ -1,0 +1,127 @@
+#!/bin/bash
+
+# Copyright 2009-2012 Manuel Rábade <manuel@rabade.net>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+  
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+  
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# ######################################################################
+# configuration
+
+# target device and where to mount it (by target i mean backup partition)
+TARGET_DEV=/dev/disk/by-label/backup
+TARGET_MNT=/mnt/backup
+
+# root and log folders in the target, undef TARGET_LOG to avoid logging
+# in the target
+TARGET_ROOT=${TARGET_MNT}/root
+TARGET_LOG=${TARGET_MNT}/log
+
+# source folder and include/exclude lists (optional) for rsync
+SOURCE_ROOT=/
+SOURCE_INCLUDE=${HOME}/.backup-include
+SOURCE_EXCLUDE=${HOME}/.backup-exclude
+
+# rsync arguments (use --dry-run for testing)
+RSYNC_ARGS="-a --delete -q"
+#RSYNC_ARGS="-a --delete --dry-run"
+
+# if TARGET_LOG is set use this filename template for the log files
+RSYNC_LOG="${TARGET_LOG}/backup-$(date +%Y%m%d%H%M)"
+
+# bti (to tweet about the backup) arguments and configuration (this is
+# optional, remember you have to create your own access tokens for the
+# twitter api)
+BTI_ARGS="--background"
+BTI_CFG=${HOME}/.bti
+
+# ######################################################################
+# here ya go!
+
+if [ ! -b ${TARGET_DEV} -o ! -d ${TARGET_MNT} ]; then
+    echo "$(date +%Y%m%d%H%M%S:) missing ${TARGET_DEV} or ${TARGET_MNT}!"
+    exit
+fi
+mountpoint ${TARGET_MNT} &> /dev/null
+if [ $? -eq 1 ]; then
+    echo -n "$(date +%Y%m%d%H%M%S:) mounting ${TARGET_MNT}... "
+    sudo mount ${TARGET_MNT} &> /dev/null
+    if [ $? -gt 0 ]; then
+        echo "failed!"
+        exit
+    else
+        echo "ok!"
+    fi
+else
+    echo "$(date +%Y%m%d%H%M%S:) already mounted ${TARGET_MNT}"
+fi
+
+if [ ! -d ${TARGET_ROOT} ]; then
+    echo "$(date +%Y%m%d%H%M%S:) missing ${TARGET_ROOT}!"
+    exit
+fi
+if [ ! -d ${SOURCE_ROOT} ]; then
+    echo "$(date +%Y%m%d%H%M%S:) missing ${SOURCE_ROOT}!"
+    exit
+fi
+
+if [ -d ${TARGET_LOG} ]; then
+    RSYNC_ARGS="${RSYNC_ARGS} --log-file=${RSYNC_LOG}.log"
+    RSYNC_ERR="${RSYNC_LOG}.err"
+else 
+    RSYNC_ERR="/dev/stderr"
+fi
+if [ -f ${SOURCE_INCLUDE} ]; then
+    RSYNC_ARGS="${RSYNC_ARGS} --include-from=${SOURCE_INCLUDE}"
+fi
+if [ -f ${SOURCE_EXCLUDE} ]; then
+    RSYNC_ARGS="${RSYNC_ARGS} --exclude-from=${SOURCE_EXCLUDE}"
+fi
+
+echo -n "$(date +%Y%m%d%H%M%S:) backup... "
+RSYNC_EXEC="rsync ${RSYNC_ARGS} ${SOURCE_ROOT} ${TARGET_ROOT}"
+#echo $RSYNC_EXEC
+START_TIME=$(date +%s)
+sudo -n $RSYNC_EXEC 2> $RSYNC_ERR
+if [ $? -gt 0 ]; then
+    echo "failed!"  
+    exit
+else
+    echo "ok!"
+fi
+
+TIME=$((($(date +%s) - $START_TIME)/60))
+GB=$(($(du -sk ${TARGET_ROOT} 2> /dev/null | awk -F ' ' '{ print $1 }') / (1024*1024)))
+STATS="$GB GB in $TIME minutes"
+echo "$(date +%Y%m%d%H%M%S:) ${STATS}!"
+if [ -f ${BTI_CFG} ]; then
+    echo "$(date +%Y%m%d%H%M%S:) tweeting... "
+    BTI_ARGS="${BTI_ARGS} --config ${BTI_CFG}"
+    BTI_EXEC="bti ${BTI_ARGS}"
+    TWEET="rsync-backup: ${STATS} at $(hostname)"
+    echo ${TWEET} | ${BTI_EXEC} &> /dev/null
+fi
+
+if [ -d ${TARGET_LOG} ]; then
+    echo "$(date +%Y%m%d%H%M%S:) compressing ${RSYNC_LOG}.log... "
+    bzip2 ${RSYNC_LOG}.log
+fi
+
+echo -n "$(date +%Y%m%d%H%M%S:) unmounting ${TARGET_MNT}... "
+sudo umount ${TARGET_MNT} &> /dev/null
+if [ $? -gt 0 ]; then
+    echo "failed!"
+    exit
+else
+    echo "ok!"
+fi

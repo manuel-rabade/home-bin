@@ -1,0 +1,129 @@
+#!/usr/bin/perl
+
+# Copyright 2009-2012 Manuel Rábade <manuel@rabade.net>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+  
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+  
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+use strict;
+use Getopt::Std;
+use File::Basename;
+use File::Find;
+use IO::File;
+use Cwd;
+
+$Getopt::Std::STANDARD_HELP_VERSION = 1;
+
+my (%opts, @files);
+my $pwd = cwd();
+my $list = 'files.txt';
+my $mydepth = $pwd =~ tr/\///;
+
+getopts('esl', \%opts);
+
+find(\&wanted, $pwd);
+
+if ($opts{s}) {
+    savelist($list, \@files);
+} elsif ($opts{l}) {
+    loadlist($list, \@files, $opts{e});
+} else {
+    print STDERR "Invalid mode!\n";
+}
+
+sub wanted {
+    my $depth = $File::Find::dir =~ tr/\///;
+    my $file = $File::Find::name;
+    my ($filename, $path, $suffix) = fileparse($file);
+    next unless (-f "$file" && 
+                 $depth - $mydepth == 0 && 
+                 $filename ne $list);
+    push (@files, $file);
+}
+
+sub savelist {
+    my $out = shift;
+    my $files = shift;
+    
+    if (-f "$out") {
+        print STDERR "Already exists: $out\n";
+        exit;
+    }
+    my $fh = IO::File->new($out,"w");
+    foreach my $file (@{$files}) {
+        my ($filename, $path, $suffix) = fileparse($file);
+        $fh->print($filename . "\n");
+    }
+    $fh->close;
+}
+
+sub loadlist {
+    my $in = shift;
+    my $files = shift;
+    my $execute = shift;
+
+    my @lines;
+    unless (-f "$in") {
+        print STDERR "File Missing: $in\n";
+        exit;
+    }
+    my $fh = IO::File->new($in,"r");
+    while (my $line = $fh->getline) {
+        chomp($line);
+        push(@lines, $line);
+    }
+    if (scalar(@lines) != scalar(@{$files})) {
+        print STDERR "Mistmatch in number of tracks:\n";
+        print STDERR scalar(@lines) ." - $list\n";
+        print STDERR scalar(@{$files}) . " - $pwd\n";
+        exit;
+    }
+    foreach my $id (0 .. $#lines) {
+        chomp($lines[$id]);
+        my $name = fileparse($files->[$id]);
+        move($pwd, $name, $lines[$id], $execute);
+    }
+}
+
+sub move {
+    my $path = shift;
+    my $name = shift;
+    my $newname = shift;
+    my $execute = shift;
+
+    if ($newname ne $name) {
+        print "$name -> $newname\n";
+        if (-f "$newname") {
+            print STDERR "Already exists: $newname ($name)\n";
+        } elsif ($execute) {
+            system("mv", "-f", "--", "$path/$name", "$path/$newname");
+        }
+    }
+}
+
+sub VERSION_MESSAGE {
+    print '$Id$';
+    print "\n";
+}
+
+sub HELP_MESSAGE {
+    print <<EOH
+
+Usage: rename-batch [-e] [-s|-l]
+
+  -e    Execute
+  -s    Create a list (files.txt) to be edited
+  -l    Load a list (files.txt) to rename the files
+
+EOH
+}

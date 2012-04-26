@@ -1,0 +1,93 @@
+#!/usr/bin/perl
+
+# Copyright 2009-2012 Manuel Rábade <manuel@rabade.net>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+  
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+  
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+use strict;
+use Cwd;
+use File::Basename;
+use File::Find;
+use Getopt::Std;
+
+$Getopt::Std::STANDARD_HELP_VERSION = 1;
+
+my %opts;
+my $pwd = cwd();
+my $mydepth = $pwd =~ tr/\///;
+
+getopts('ers:m:d', \%opts);
+find({ wanted => \&process, no_chdir => 1 }, $pwd);
+
+sub process {
+    my $file = $_;
+    my $thisdepth = $file =~ tr/\///;
+    $file =~ s/^$pwd/./;
+    unless ((($thisdepth - $mydepth) > 0 && $opts{r}) || 
+        ($thisdepth - $mydepth) == 1) {
+        return 0;
+    }
+    print "=> $file\n" if ($opts{d});
+    my @newfile;
+    foreach my $part (split('/',$file)) {
+        print " +> $part\n" if ($opts{d});
+        push (@newfile, applyregexp($part));
+    }
+    my $newfile = join('/',@newfile);
+    $file = dirname($newfile)."/".basename($file);
+    if ($file ne $newfile) {
+        print "$file -> $newfile\n";
+        if (-e "$newfile") {
+            print STDERR "Already exists: $newfile ($file)\n";
+        } elsif ($opts{e}) {
+            system("mv", "-f", "--", "$file", "$newfile");
+        }
+    }
+}
+
+sub applyregexp {
+    my $in = shift;
+    print "  -> $in - " if ($opts{d});
+    if ($opts{m}) {
+        my $if_match = "\$in =~ $opts{m}";
+        unless (eval $if_match) {
+            print "$in (not matched)\n" if ($opts{d});
+            return $in;
+        }
+    }
+    my $regexp = "\$in =~ $opts{s}";
+    eval $regexp;
+    print "$in\n" if ($opts{d});
+    return $in;
+}
+
+sub VERSION_MESSAGE {
+    print '$Id: pre2name 12 2008-03-22 11:30:33Z mig $';
+    print "\n";
+}
+
+sub HELP_MESSAGE {
+    print <<EOH
+
+Usage: pre2name [-eRd] [-r PREGEXP] [-m PREGEXP]
+
+  -e            Execute
+  -d            Debug
+  -r            Recursive
+  -s PREGEXP    Perl regular expression (s///) to apply
+  -m PREGEXP    Only affect files that match (m//) this perl regular
+                expression
+
+EOH
+}

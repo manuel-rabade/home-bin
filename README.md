@@ -7,7 +7,7 @@ rename-batch
 ------------
 
 Perl script to rename files using a text file to record the new file
-names. A example of use would be:
+names. An example of use would be:
 
 1. First you save a file list:
 

@@ -47,3 +47,13 @@ use would be:
 
         rename-regexp -s 'tr/_[A-Z]/ [a-z]/' -r -e
 
+rsync-backup
+------------
+
+Bash script to mount an external disk, backup a local filesystem using
+rsync, tweet about it and umount the external disk.
+
+To setup your backup review the configuration section of the script. To
+enable tweeting your backup stats you should install bti
+(https://github.com/gregkh/bti), create a twitter application and pair
+it with your bti configuration.

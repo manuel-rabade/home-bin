@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2009-2012 Manuel Rábade <manuel@rabade.net>
+# Copyright 2012 Manuel Rabade <manuel@rabade.net>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -46,7 +46,7 @@ BTI_ARGS="--background"
 BTI_CFG=${HOME}/.bti
 
 # ######################################################################
-# here ya go!
+# backup
 
 if [ ! -b ${TARGET_DEV} -o ! -d ${TARGET_MNT} ]; then
     echo "$(date +%Y%m%d%H%M%S:) missing ${TARGET_DEV} or ${TARGET_MNT}!"

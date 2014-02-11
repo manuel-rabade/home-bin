@@ -7,16 +7,15 @@ rename-batch
 ------------
 
 Perl script to rename files using a text file to record the new file
-names. An example of use would be:
+names. To use it you would do something like:
 
-1. First you save a file list:
+1. Save a file list:
 
         rename-batch -s
 
-2. You can edit `files.txt` wherever you want but not change the files
-   order.
+2. Edit `files.txt` wherever you want but don't change the files order.
 
-3. To see how the files would be renamed you load the saved file list:
+3. See how the files would be renamed:
 
         rename-batch -l
 
@@ -24,3 +23,27 @@ names. An example of use would be:
    changes:
 
         rename-batch -l -e
+
+rename-regexp
+-------------
+
+Perl script to rename files using regular expressions. Some examples of
+use would be:
+
+- Replace underscores with spaces in all files:
+
+        rename-regexp -s 's/_/ /'
+
+- Replace underscores with spaces in files that end in .pdf:
+
+        rename-regexp -s 's/_/ /' -m 'm/\.pdf$/'
+
+- Replace underscores with spaces and change names case to lower
+  recursively:
+
+        rename-regexp -s 'tr/_[A-Z]/ [a-z]/' -r
+
+- To apply the changes you need to add the `-e` switch:
+
+        rename-regexp -s 'tr/_[A-Z]/ [a-z]/' -r -e
+

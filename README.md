@@ -6,8 +6,8 @@ Scripts that deserve to live in ~/bin
 rename-batch
 ------------
 
-Perl script to rename files using a text file to record the new file
-names. To use it you would do something like:
+Perl script to rename files using a text file to record the new
+filenames. To use it you would do something like:
 
 1. Save a file list:
 
@@ -30,16 +30,16 @@ rename-regexp
 Perl script to rename files using regular expressions. Some examples of
 use would be:
 
-- Replace underscores with spaces in all files:
+- Replace underscores with spaces in all filenames:
 
         rename-regexp -s 's/_/ /'
 
-- Replace underscores with spaces in files that end in .pdf:
+- Replace underscores with spaces in filenames that end in `.pdf`:
 
         rename-regexp -s 's/_/ /' -m 'm/\.pdf$/'
 
-- Replace underscores with spaces and change names case to lower
-  recursively:
+- Recursively replace underscores with spaces and change filenames case
+  to lower:
 
         rename-regexp -s 'tr/_[A-Z]/ [a-z]/' -r
 
@@ -53,7 +53,9 @@ rsync-backup
 Bash script to mount an external disk, backup a local filesystem using
 rsync, tweet about it and umount the external disk.
 
-To setup your backup review the configuration section of the script. To
-enable tweeting your backup stats you should install bti
+To setup your backup first review the configuration section of the
+script (tip: to test your setup add `--dry-run` in `RSYNC_ARGS`).
+
+To enable tweeting the backup stats you should install bti
 (https://github.com/gregkh/bti), create a twitter application and pair
 it with your bti configuration.

@@ -54,7 +54,7 @@ Bash script to mount an external disk, backup a local filesystem using
 rsync, tweet about it and umount the external disk.
 
 To setup your backup first review the configuration section of the
-script (tip: to test your setup add `--dry-run` in `RSYNC_ARGS`).
+script. To test your setup you can add `--dry-run` to `RSYNC_ARGS`.
 
 To enable tweeting the backup stats you should install bti
 (https://github.com/gregkh/bti), create a twitter application and pair

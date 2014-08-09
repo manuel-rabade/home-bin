@@ -56,6 +56,16 @@ rsync, tweet about it and umount the external disk.
 To setup your backup first review the configuration section of the
 script. To test your setup you can add `--dry-run` to `RSYNC_ARGS`.
 
-To enable tweeting the backup stats you should install bti
-(https://github.com/gregkh/bti), create a twitter application and pair
-it with your bti configuration.
+To enable tweeting the backup stats you should install
+[bti](https://github.com/gregkh/bti), create a twitter application and
+pair it with your bti configuration.
+
+Author
+------
+
+Manuel Rábade <[manuel@rabade.net](mailto:manuel@rabade.net)>
+
+License
+-------
+
+This work is licensed under a [MIT License](LICENSE.txt).

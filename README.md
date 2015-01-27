@@ -68,4 +68,4 @@ Manuel Rábade <[manuel@rabade.net](mailto:manuel@rabade.net)>
 License
 -------
 
-This work is licensed under a [MIT License](LICENSE.txt).
+This work is published under a [MIT License](LICENSE.txt).

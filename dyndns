@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# config
+TOKEN=""
+DOMAIN=""
+RECORD=""
+
+# update
+IP="$(curl -s http://ipecho.net/plain)"
+URL="https://api.digitalocean.com/v2/domains/$DOMAIN/records/$RECORD"
+DATA="{\"data\":\"$IP\"}"
+RES=$(curl -s -X PUT -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN" -d $DATA $URL)

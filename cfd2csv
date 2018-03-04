@@ -1,0 +1,66 @@
+#!/usr/bin/perl
+
+use strict;
+use utf8;
+
+use Getopt::Std;
+use XML::Simple;
+use Date::Parse;
+use POSIX qw(strftime);
+use Data::Dumper;
+use Text::CSV;
+
+$Getopt::Std::STANDARD_HELP_VERSION = 1;
+
+my ($data, %opts);
+getopts('er', \%opts);
+
+foreach (@ARGV) {
+    #print "===> " . $_ . "\n";
+
+    my $cfd = XMLin($_);
+    # use Data::Dumper;
+    # print Dumper($cfd);
+    die unless ($cfd);
+
+    my $time = str2time($cfd->{fecha});
+    my $key = strftime('%Y%m%d', localtime($time));
+    my $iva = $cfd->{'cfdi:Impuestos'}{totalImpuestosTrasladados};
+    my $fields = [ strftime('%d-%m-%Y', localtime($time)) ];
+    if (defined($opts{e})) {
+        push(@{$fields}, $cfd->{'cfdi:Emisor'}{rfc}, $cfd->{'cfdi:Emisor'}->{nombre});
+    }
+    if (defined($opts{r})) {
+        push(@{$fields}, $cfd->{'cfdi:Receptor'}{rfc}, $cfd->{'cfdi:Receptor'}->{nombre});
+    }
+    push(@{$fields}, '', $cfd->{subTotal}, $iva, $cfd->{total});
+    push(@{$data->{$key}}, $fields);
+}
+
+my $csv = Text::CSV->new ( { binary => 1 } );
+$csv->eol ("\n");
+
+foreach my $key (sort keys %{$data}) {
+    # print "---> " . $day . "\n";
+    foreach my $fields (@{$data->{$key}}) {
+        # print Dumper($fields);
+        die unless ($csv->combine(@{$fields}));
+        my $line = $csv->string();
+        $line =~ tr/áéíóúüñçÁÉÍÓÚÜÑÇ/aeiouuncAEIOUUNC/;
+        print uc($line);
+    }
+}
+
+sub VERSION_MESSAGE {
+}
+
+sub HELP_MESSAGE {
+    print <<EOH
+
+Usage: cfd2csv [-er] cfd-1.xml cfd-2.xml ... > cfds.csv
+
+  -e    Imprimir emisor
+  -r    Imprimir receptor
+
+EOH
+}
